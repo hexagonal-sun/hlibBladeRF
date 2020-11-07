@@ -12,7 +12,7 @@
 
 module LibBladeRF.Flash ( bladeRFEraseFlash
                         , bladeRFReadFlash
-                        , bladeRFWriteFlash
+                        , bladeRFWriteFlashBytes
                         ) where
 
 import Foreign
@@ -49,13 +49,13 @@ bladeRFReadFlash dev p c = alloca $ \bptr -> do
   return (ret, buffer)
 
 -- | Write data from the bladeRF's SPI flash.
-bladeRFWriteFlash :: DeviceHandle     -- ^ Device handle
-                  -> BS.ByteString    -- ^ Data to write to flash
-                  -> Word32           -- ^ page  Page to begin writing at
-                  -> Word32           -- ^ count
-                  -> IO (BladeRFReturnType ())
-bladeRFWriteFlash dev b p c = allocaBytes (fromIntegral $ p * c'BLADERF_FLASH_PAGE_SIZE) $ \bptr -> do
+bladeRFWriteFlashBytes :: DeviceHandle     -- ^ Device handle
+                       -> BS.ByteString    -- ^ Data to write to flash
+                       -> Word32           -- ^ Address to begin writing at
+                       -> Word32           -- ^ count
+                       -> IO (BladeRFReturnType ())
+bladeRFWriteFlashBytes dev b p c = allocaBytes (fromIntegral c) $ \bptr -> do
   -- XXX - Buffer allocation size must be `page` * BLADERF_FLASH_PAGE_SIZE bytes or larger.
-  pokeArray bptr (BS.unpack b) -- XXX can we overflow here??
-  ret <- c'bladerf_write_flash (unDeviceHandle dev) bptr p c
+  pokeArray bptr (BS.unpack b)
+  ret <- c'bladerf_write_flash_bytes (unDeviceHandle dev) bptr p c
   return $ bladeRFErrorTy ret
